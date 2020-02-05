@@ -1,10 +1,10 @@
 from video_sources import WPpilot
-from video_functions import wp_pilot_login, wp_detect_faces
+from video_functions import wp_pilot_login, wp_detect_faces, wp_screenshot_full
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+# from selenium.webdriver.common.by import By
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options as chrome_options
 
 import numpy as np
@@ -15,13 +15,16 @@ import imutils
 import cv2
 
 
+wp_login = ["dw.olsztyn.1@gmail.com", "dw.olsztyn1@wp.pl"]
+wp_password = ["dwolsztyn1", "dwolsztyn1"]
+wp_url = ['https://pilot.wp.pl/tv/#tvp-1-hd', 'https://pilot.wp.pl/tv/#tvn']
+wp_cookies = ["cookies/wp_tvp1.pickle", "cookies/wp_tvn.pickle"]
 
 
 # WPpilot sources
 video_sources = [
     WPpilot(*i) 
-    for i 
-    in zip(wp_login, wp_password, wp_cookies, wp_url)
+    for i in zip(wp_login, wp_password, wp_cookies, wp_url)
 ]
 
 # webdriver setup
@@ -47,10 +50,8 @@ for source in video_sources:
     )
 
 # control screenshots
-for i, source in enumerate(video_sources):
-    source.browser.save_screenshot(
-        f"screenshots/{i}.png"
-    )
+wp_screenshot_full(video_sources)
+
 
 
 # load detector model
@@ -65,11 +66,20 @@ while True:
         #release frames
         captured_frames = []
 
+        # remove this if not needed
+        locations = []
+
         # loop over the frames from the video stream
         for source in video_sources:
             frame, face_locations = wp_detect_faces(source.browser, net)
             captured_frames.append(frame)
-        
+            
+            # remove this
+            locations.append(len(face_locations))
+        # only checking detections
+        print(locations)
+
+
         #TODO build face encodings
         #TODO push encodings to analyzer
 
