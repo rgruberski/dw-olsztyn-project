@@ -2,9 +2,6 @@ from video_sources import WPpilot
 from video_functions import wp_pilot_login, wp_detect_faces, wp_screenshot_full
 
 from selenium import webdriver
-# from selenium.webdriver.common.by import By
-# from selenium.webdriver.support.ui import WebDriverWait
-# from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options as chrome_options
 
 import numpy as np
@@ -14,11 +11,6 @@ import os
 import imutils
 import cv2
 
-
-wp_login = ["dw.olsztyn.1@gmail.com", "dw.olsztyn1@wp.pl"]
-wp_password = ["dwolsztyn1", "dwolsztyn1"]
-wp_url = ['https://pilot.wp.pl/tv/#tvp-1-hd', 'https://pilot.wp.pl/tv/#tvn']
-wp_cookies = ["cookies/wp_tvp1.pickle", "cookies/wp_tvn.pickle"]
 
 
 # WPpilot sources
