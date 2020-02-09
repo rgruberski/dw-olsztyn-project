@@ -9,11 +9,67 @@ import pickle
 from datetime import datetime
 import time
 
+import face_recognition
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options as chrome_options
+
+
+def frame_compare_faces(encoding, known_encodings, known_names, tolerance=0.5):
+    """
+    Compare distances between encodings and return name of closest one 
+    if distance is lower than tolerance
+    """
+    compare_distance = face_recognition.face_distance(known_encodings, encoding)
+    closest_index = np.argsort(compare_distance)[0]
+    closest_distance = compare_distance[closest_index]
+    name = known_names[closest_index] if closest_distance < tolerance else "UNKNOWN"
+    if name != "UNKNOWN": print(closest_distance, name) # delete this!
+    return name
+
+
+def frame_detect_dnn(frame, net, min_confidence=0.7):
+    # face locations list
+    face_locations = []
+    
+    # grab the frame dimensions and convert it to a blob
+    (h, w) = frame.shape[:2]
+    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (400, 400)), 1.0,
+        (300, 300), (104.0, 177.0, 123.0))
+    
+    # pass the blob through the network and obtain the detections and
+    # predictions
+    net.setInput(blob)
+    detections = net.forward()
+
+    # loop over the detections
+    for i in range(0, detections.shape[2]):
+        # extract the confidence (i.e., probability) associated with the
+        # prediction
+        confidence = detections[0, 0, i, 2]
+
+        # filter out weak detections by ensuring the `confidence` is
+        # greater than the minimum confidence
+        if confidence < min_confidence:
+            continue
+
+        # compute the (x, y)-coordinates of the bounding box for the
+        # object
+        box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+        (startX, startY, endX, endY) = box.astype("int")
+
+        # draw the bounding box of the face along with the associated
+        # probability
+        cv2.rectangle(frame, (startX, startY), (endX, endY),
+            (0, 0, 255), 2)
+    
+        # keep face location in face_recognition format
+        face_locations.append((startY, endX, endY, startX))
+    
+    return frame, face_locations
 
 
 def wp_pilot_login(browser, wp_login, wp_password, cookies_file, wp_url):
@@ -122,11 +178,8 @@ def wp_pilot_login(browser, wp_login, wp_password, cookies_file, wp_url):
     
 
 def wp_detect_faces(browser, net):
-    # clean up face locations for new frame
-    face_locations = []
-
-    # grab the frame from the threaded video stream and resize it
-    # to have a maximum width of 400 pixels
+    # grab the frame from the threaded video stream and 
+    # optionally resize it
     frame = browser.find_element_by_xpath(
         '//*[@id="Player0"]/div/div[1]/video'
     ).screenshot_as_png
@@ -134,44 +187,15 @@ def wp_detect_faces(browser, net):
     frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
     # frame = imutils.resize(frame, width=400)
 
-    # grab the frame dimensions and convert it to a blob
-    (h, w) = frame.shape[:2]
-    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (400, 400)), 1.0,
-        (300, 300), (104.0, 177.0, 123.0))
+    # detect face locations
+    frame, face_locations = frame_detect_dnn(frame, net)
     
-    # pass the blob through the network and obtain the detections and
-    # predictions
-    net.setInput(blob)
-    detections = net.forward()
-
-    # loop over the detections
-    for i in range(0, detections.shape[2]):
-        # extract the confidence (i.e., probability) associated with the
-        # prediction
-        confidence = detections[0, 0, i, 2]
-
-        # filter out weak detections by ensuring the `confidence` is
-        # greater than the minimum confidence
-        if confidence < 0.7:
-            continue
-
-        # compute the (x, y)-coordinates of the bounding box for the
-        # object
-        box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-        (startX, startY, endX, endY) = box.astype("int")
-
-        # draw the bounding box of the face along with the associated
-        # probability
-        cv2.rectangle(frame, (startX, startY), (endX, endY),
-            (0, 0, 255), 2)
-    
-        # keep face location in face_recognition format
-        face_locations.append((startY, endX, endY, startX))
-
     return frame, face_locations
+
 
 def wp_screenshot_full(video_sources):
     for i, source in enumerate(video_sources):
         source.browser.save_screenshot(
             f"screenshots/vs_{i}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         )
+

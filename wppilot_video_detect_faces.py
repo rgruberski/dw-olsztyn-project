@@ -12,6 +12,11 @@ import imutils
 import cv2
 
 
+# WPpilot credentials
+with open("wp_credentials.pickle", "rb") as file:
+    wp_login, wp_password = pickle.load(file)
+wp_url = ['https://pilot.wp.pl/tv/#tvp-1-hd', 'https://pilot.wp.pl/tv/#tvn']
+wp_cookies = ["cookies/wp_tvp1.pickle", "cookies/wp_tvn.pickle"]
 
 # WPpilot sources
 video_sources = [
@@ -44,8 +49,6 @@ for source in video_sources:
 # control screenshots
 wp_screenshot_full(video_sources)
 
-
-
 # load detector model
 net = cv2.dnn.readNetFromCaffe(
     "face_detector_model/deploy.prototxt.txt", 
@@ -58,32 +61,22 @@ while True:
         #release frames
         captured_frames = []
 
-        # remove this if not needed
-        locations = []
-
         # loop over the frames from the video stream
         for source in video_sources:
             frame, face_locations = wp_detect_faces(source.browser, net)
             captured_frames.append(frame)
             
-            # remove this
-            locations.append(len(face_locations))
-        # only checking detections
-        print(locations)
-
-
         #TODO build face encodings
         #TODO push encodings to analyzer
-
 
         # show the output frames as montage
         montage_size = 2
         montage = imutils.build_montages(
             image_list=captured_frames, 
             image_shape=(frame.shape[1], frame.shape[0]), 
-            montage_shape=(1, montage_size)
+            montage_shape=(montage_size, 1)
         )[0]
-        cv2.imshow("Frame", montage)
+        cv2.imshow("Captured_frames", montage)
         key = cv2.waitKey(1) & 0xFF
 
         # if the `q` key was pressed, break from the loop
