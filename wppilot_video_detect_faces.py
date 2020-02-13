@@ -1,15 +1,23 @@
 from video_sources import WPpilot
-from video_functions import wp_pilot_login, wp_detect_faces, wp_screenshot_full
+from video_functions import wp_pilot_login, wp_detect_faces, wp_screenshot_full, frame_compare_faces
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as chrome_options
 
+import pandas as pd
 import numpy as np
 import time
+from datetime import datetime
 import pickle
 import os
 import imutils
 import cv2
+import face_recognition
+
+
+# load known faces data
+known_names = pd.read_pickle("dataset/president_faces_df.pickle")["name"].to_list()
+known_encodings = pd.read_pickle("dataset/president_faces_df.pickle")["face_encodings"].to_list()
 
 
 # WPpilot credentials
@@ -66,8 +74,32 @@ while True:
             frame, face_locations = wp_detect_faces(source.browser, net)
             captured_frames.append(frame)
             
-        #TODO build face encodings
-        #TODO push encodings to analyzer
+        if len(face_locations) > 0:
+            # build face encodings
+            face_encodings = face_recognition.face_encodings(frame, face_locations)
+
+            # compare encodings with known faces
+            names = [
+                frame_compare_faces(encoding, known_encodings, known_names) 
+                for encoding in face_encodings
+            ]
+
+            # annotate face boxes with names
+            for ((top, right, bottom, left), name) in zip(face_locations, names):
+                y = top - 15 if top - 15 > 15 else top + 15
+                cv2.putText(
+                    frame, 
+                    name, 
+                    (left, y), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 
+                    0.75, 
+                    (0, 255, 0), 2
+                )
+                #TODO do other stuff with frame
+                if name != "UNKNOWN":
+                    # do_other_stuff(frame)
+                    # cv2.imwrite(f"screenshots/{datetime.now()} {name}.png", frame)
+            
 
         # show the output frames as montage
         montage_size = 2

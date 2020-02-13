@@ -18,7 +18,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options as chrome_options
 
 
-def frame_compare_faces(encoding, known_encodings, known_names, tolerance=0.4):
+def frame_compare_faces(encoding, known_encodings, known_names, tolerance=0.45):
     """
     Compare distances between encodings and return name of closest one 
     if distance is lower than tolerance
@@ -27,6 +27,9 @@ def frame_compare_faces(encoding, known_encodings, known_names, tolerance=0.4):
     closest_index = np.argsort(compare_distance)[0]
     closest_distance = compare_distance[closest_index]
     name = known_names[closest_index] if closest_distance < tolerance else "UNKNOWN"
+    
+    # only for verification
+    # print(f"{closest_distance} \t {name} \t {known_names[closest_index]}")
 
     return name
 

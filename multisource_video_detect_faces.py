@@ -1,17 +1,15 @@
-# from imutils.video import VideoStream
 import imutils
 import cv2
 import face_recognition
 import time
 from datetime import datetime
-# import pickle
 import pandas as pd
 from video_functions import frame_detect_dnn, frame_compare_faces
 
 
 # load known faces data
-known_names = pd.read_pickle("known_faces/known_faces_df.pickle")["name"].to_list()
-known_encodings = pd.read_pickle("known_faces/known_faces_df.pickle")["face_encodings"].to_list()
+known_names = pd.read_pickle("dataset/president_faces_df.pickle")["name"].to_list()
+known_encodings = pd.read_pickle("dataset/president_faces_df.pickle")["face_encodings"].to_list()
 
 # load detector model
 net = cv2.dnn.readNetFromCaffe(
@@ -21,7 +19,7 @@ net = cv2.dnn.readNetFromCaffe(
 
 # video sources urls
 sources_urls = [
-    "https://sdt-epix10-57.tvp.pl/token/video/live/46288089/20200210/1369639068/6a1a2876-7c07-4d0b-ad1c-9dbe4beddae9/tvpinfo.isml/tvpinfo-audio%3D96000-video%3D3500000.m3u8"
+    "https://sdt-epix9-56.tvp.pl/token/video/live/46334064/20200213/1369639068/36a75d7f-78b2-43e1-9b95-ae6454b4c704/tvpinfo.isml/tvpinfo-audio%3D96000-video%3D1600000.m3u8"
 ]
 
 # video streams setup 
@@ -48,16 +46,16 @@ while True:
             
             
             if len(face_locations) > 0:
-                #TODO build face encodings
+                # build face encodings
                 face_encodings = face_recognition.face_encodings(frame, face_locations)
 
-                #TODO compare encodings with known faces
+                # compare encodings with known faces
                 names = [
                     frame_compare_faces(encoding, known_encodings, known_names) 
                     for encoding in face_encodings
                 ]
 
-                #TODO annotate face boxes with names
+                # annotate face boxes with names
                 for ((top, right, bottom, left), name) in zip(face_locations, names):
                     y = top - 15 if top - 15 > 15 else top + 15
                     cv2.putText(
@@ -68,15 +66,17 @@ while True:
                         0.75, 
                         (0, 255, 0), 2
                     )
-                    # REMOVE THIS
+                    
+                    #TODO do other stuff with frame
                     if name != "UNKNOWN":
-                        cv2.imwrite(f"screenshots/{datetime.now()} {name}.png", frame)
+                        # do_other_stuff(frame)
+                        # cv2.imwrite(f"screenshots/{datetime.now()} {name}.png", frame)
             
             # keep processed frame for displaying
             captured_frames.append(frame)
 
         # show the output frames as montage
-        montage_size = 1
+        montage_size = len(video_streams)
         montage = imutils.build_montages(
             image_list=captured_frames, 
             image_shape=(frame.shape[1], frame.shape[0]), 
@@ -88,12 +88,12 @@ while True:
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
             break
-
+        
     except Exception as e:
         print(e)
         break
 
-# do a bit of cleanup
-cv2.destroyAllWindows()
+# cleanup
 for vs in video_streams:
-    vs.stop()
+    vs.release()
+cv2.destroyAllWindows()
