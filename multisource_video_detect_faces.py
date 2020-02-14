@@ -69,6 +69,7 @@ while True:
                     
                     #TODO do other stuff with frame
                     if name != "UNKNOWN":
+                        pass
                         # do_other_stuff(frame)
                         # cv2.imwrite(f"screenshots/{datetime.now()} {name}.png", frame)
             
