@@ -26,3 +26,6 @@ while True:
 
         if key == ord("q"):
             break
+
+        if key == ord("s"):
+            cv2.imwrite('montage.jpg', montage)
