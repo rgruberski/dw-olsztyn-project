@@ -12,12 +12,14 @@ class VideoGrabber():
     threads = []
     frames = {}
 
-    scaling_factor = 3;
+    def __init__(self, scaling_factor = 1): 
+        self.scaling_factor = scaling_factor
+
 
     def run(self):
 
         for index, url in enumerate(self.sources_urls):
-            thread = threading.Thread(target=self.run_source_thread, args=(index, url))
+            thread = threading.Thread(target=self.run_source_thread, args=(index, url), daemon = True)
             thread.start()
 
             self.threads.append(thread)
@@ -46,6 +48,7 @@ class VideoGrabber():
                 frame = cv2.resize(frame, (int(new_width), int(new_height)))
 
             self.frames[index] = frame
+
 
     def is_ready(self):
         return len(self.frames) == len(self.sources_urls)
