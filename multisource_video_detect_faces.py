@@ -19,7 +19,7 @@ net = cv2.dnn.readNetFromCaffe(
 
 # video sources urls
 sources_urls = [
-    "https://sdt-epix9-56.tvp.pl/token/video/live/46334064/20200213/1369639068/36a75d7f-78b2-43e1-9b95-ae6454b4c704/tvpinfo.isml/tvpinfo-audio%3D96000-video%3D1600000.m3u8"
+    "https://rsdt-ols1-3.tvp.pl/token/video/live/14812849/20200219/623891889/1b2d1721-0f47-428a-9deb-ba638d88b8e7/tvpinfo.isml/tvpinfo-audio%3D96000-video%3D120000.m3u8"
 ]
 
 # video streams setup 
@@ -69,6 +69,7 @@ while True:
                     
                     #TODO do other stuff with frame
                     if name != "UNKNOWN":
+                        pass
                         # do_other_stuff(frame)
                         # cv2.imwrite(f"screenshots/{datetime.now()} {name}.png", frame)
             

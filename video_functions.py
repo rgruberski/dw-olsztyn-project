@@ -29,7 +29,7 @@ def frame_compare_faces(encoding, known_encodings, known_names, tolerance=0.45):
     name = known_names[closest_index] if closest_distance < tolerance else "UNKNOWN"
     
     # only for verification
-    # print(f"{closest_distance} \t {name} \t {known_names[closest_index]}")
+    print(f"{closest_distance} \t {name} \t {known_names[closest_index]}")
 
     return name
 
