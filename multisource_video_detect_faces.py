@@ -73,10 +73,9 @@ while True:
                     
                 # dump to database
                 if name != "UNKNOWN":
-                # if name: # this one is only for tests!
-                    timestamp = datetime.now().strftime("%Y-%M-%d %H:%M:%S")
+                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     if debug:
-                        print(f"VALUES('{timestamp}', '{name}', '{source}')")
+                        print(f"{timestamp}, {name}, {source}")
                     
                     # verify last seen timestamp
                     if last_recognitions.get(f"{source} {name}") != timestamp:

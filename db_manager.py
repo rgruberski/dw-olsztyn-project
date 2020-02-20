@@ -33,20 +33,13 @@ class DBManager():
         print("DB table is up and ready")
     
     def insert_data(self, timestamp, name, source):
-        self.execute(
-            f"""
-            INSERT INTO most_popular 
-            (
-                timestamp, 
-                name, 
-                source
-            ) 
-            VALUES(
-                '{timestamp}', 
-                '{name}',
-                '{source}'
-            )
-            """
-        )
 
+        sql = f"""
+        INSERT INTO most_popular 
+        (timestamp, name, source) 
+        VALUES ('{timestamp}', '{name}', '{source}')
+        """
+
+        self.execute( sql )
+        # print( sql )
 
