@@ -27,9 +27,6 @@ def frame_compare_faces(encoding, known_encodings, known_names, tolerance=0.45):
     closest_index = np.argsort(compare_distance)[0]
     closest_distance = compare_distance[closest_index]
     name = known_names[closest_index] if closest_distance < tolerance else "UNKNOWN"
-    
-    # only for verification
-    print(f"{closest_distance} \t {name} \t {known_names[closest_index]}")
 
     return name
 
@@ -37,11 +34,12 @@ def frame_compare_faces(encoding, known_encodings, known_names, tolerance=0.45):
 def frame_detect_dnn(frame, net, min_confidence=0.7):
     # face locations list
     face_locations = []
-    
+
     # grab the frame dimensions and convert it to a blob
     (h, w) = frame.shape[:2]
     blob = cv2.dnn.blobFromImage(cv2.resize(frame, (400, 400)), 1.0,
         (300, 300), (104.0, 177.0, 123.0))
+
     
     # pass the blob through the network and obtain the detections and
     # predictions

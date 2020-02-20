@@ -1,9 +1,11 @@
 import imutils
 import cv2
 import face_recognition
-import time
+# import time
 from datetime import datetime
 import pandas as pd
+from video_grabber import VideoGrabber
+from db_manager import DBManager
 from video_functions import frame_detect_dnn, frame_compare_faces
 
 
@@ -17,38 +19,37 @@ net = cv2.dnn.readNetFromCaffe(
     "face_detector_model/res10_300x300_ssd_iter_140000.caffemodel"
 )
 
-# video sources urls
-sources_urls = [
-    "https://rsdt-ols1-3.tvp.pl/token/video/live/14812849/20200219/623891889/1b2d1721-0f47-428a-9deb-ba638d88b8e7/tvpinfo.isml/tvpinfo-audio%3D96000-video%3D120000.m3u8"
-]
-
 # video streams setup 
-video_streams = [cv2.VideoCapture(url) for url in sources_urls]
-for i, vs in enumerate(video_streams):
-    # check if source opened successfully
-    if (vs.isOpened()== False): 
-        print(f"[WARNING] Error opening video stream {i}")
+vg = VideoGrabber(1)
+vg.run()
+
+# database manager setup
+db = DBManager()
+db.setup_table()
+
+# recognition grabber
+last_recognitions = {}
 
 # main loop
 while True:
-    try:
-        #release frames
-        captured_frames = []
+    if(vg.is_ready()):
 
-        # loop over the frames from the video stream
-        for vs in video_streams: 
-            ret, frame = vs.read()
-            if ret != True:
-                continue
+        # grab frames
+        frames = vg.frames
+
+        # frames for montage
+        # captured_frames = []
+
+        # loop over the frames
+        for source, frame in frames.items(): 
 
             # detect faces on frame
             frame, face_locations = frame_detect_dnn(frame, net, min_confidence=0.7)
             
-            
             if len(face_locations) > 0:
                 # build face encodings
                 face_encodings = face_recognition.face_encodings(frame, face_locations)
-
+                
                 # compare encodings with known faces
                 names = [
                     frame_compare_faces(encoding, known_encodings, known_names) 
@@ -67,34 +68,41 @@ while True:
                         (0, 255, 0), 2
                     )
                     
-                    #TODO do other stuff with frame
-                    if name != "UNKNOWN":
-                        pass
+                    # dump to database
+                    if name: # this one is only for tests
+                    # if name != "UNKNOWN":
+                        timestamp = datetime.now().strftime("%Y-%M-%d %H:%M:%S")
+
+                        # verify last seen timestamp
+                        if last_recognitions.get(f"{source} {name}") != timestamp:
+                            # db.test_data(timestamp, name, source) # this one is only for tests
+                            # db.insert_data(timestamp, name, source)
+                            # last_recognitions[f"{source} {name}"] = timestamp
+                            pass
+
                         # do_other_stuff(frame)
-                        # cv2.imwrite(f"screenshots/{datetime.now()} {name}.png", frame)
             
             # keep processed frame for displaying
-            captured_frames.append(frame)
+            # captured_frames.append(frame)
 
         # show the output frames as montage
-        montage_size = len(video_streams)
+        montage_frames = list(frames.values())
         montage = imutils.build_montages(
-            image_list=captured_frames, 
-            image_shape=(frame.shape[1], frame.shape[0]), 
-            montage_shape=(montage_size, 1)
+            image_list=montage_frames, 
+            image_shape=(montage_frames[0].shape[1], montage_frames[0].shape[0]), 
+            montage_shape=(len(montage_frames), 1)
         )[0]
         cv2.imshow("Captured_frames", montage)
+        
         key = cv2.waitKey(1) & 0xFF
-
-        # if the `q` key was pressed, break from the loop
+        
+        # press q to quit
         if key == ord("q"):
             break
         
-    except Exception as e:
-        print(e)
-        break
+        # press s to save montage
+        if key == ord("s"):
+            cv2.imwrite('montage.jpg', montage)
 
 # cleanup
-for vs in video_streams:
-    vs.release()
 cv2.destroyAllWindows()
