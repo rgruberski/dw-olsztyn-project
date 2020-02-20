@@ -42,18 +42,11 @@ class DBManager():
                 source
             ) 
             VALUES(
-                {timestamp}, 
-                {name},
-                {source}
+                '{timestamp}', 
+                '{name}',
+                '{source}'
             )
             """
         )
 
-    def test_data(self, timestamp, name, source):
-        print(f"""
-            VALUES(
-                    {timestamp}, 
-                    {name},
-                    {source}
-                )
-        """)
+

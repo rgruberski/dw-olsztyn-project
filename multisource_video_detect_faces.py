@@ -1,6 +1,7 @@
 import imutils
 import cv2
 import face_recognition
+import copy
 # import time
 from datetime import datetime
 import pandas as pd
@@ -8,6 +9,9 @@ from video_grabber import VideoGrabber
 from db_manager import DBManager
 from video_functions import frame_detect_dnn, frame_compare_faces
 
+
+# turn on display functions and other details
+debug = True
 
 # load known faces data
 known_names = pd.read_pickle("dataset/president_faces_df.pickle")["name"].to_list()
@@ -35,10 +39,7 @@ while True:
     if(vg.is_ready()):
 
         # grab frames
-        frames = vg.frames
-
-        # frames for montage
-        # captured_frames = []
+        frames = copy.deepcopy(vg.frames)
 
         # loop over the frames
         for source, frame in frames.items(): 
@@ -56,53 +57,52 @@ while True:
                     for encoding in face_encodings
                 ]
 
-                # annotate face boxes with names
-                for ((top, right, bottom, left), name) in zip(face_locations, names):
-                    y = top - 15 if top - 15 > 15 else top + 15
-                    cv2.putText(
-                        frame, 
-                        name, 
-                        (left, y), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 
-                        0.75, 
-                        (0, 255, 0), 2
-                    )
+                for location, name in zip(face_locations, names):
+                    # annotate face boxes with names
+                    if debug:
+                        (top, right, bottom, left) = location
+                        y = top - 15 if top - 15 > 15 else top + 15
+                        cv2.putText(
+                            frame, 
+                            name, 
+                            (left, y), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 
+                            0.75, 
+                            (0, 255, 0), 2
+                        )
                     
-                    # dump to database
-                    if name: # this one is only for tests
-                    # if name != "UNKNOWN":
-                        timestamp = datetime.now().strftime("%Y-%M-%d %H:%M:%S")
-
-                        # verify last seen timestamp
-                        if last_recognitions.get(f"{source} {name}") != timestamp:
-                            # db.test_data(timestamp, name, source) # this one is only for tests
-                            # db.insert_data(timestamp, name, source)
-                            # last_recognitions[f"{source} {name}"] = timestamp
-                            pass
-
-                        # do_other_stuff(frame)
-            
-            # keep processed frame for displaying
-            # captured_frames.append(frame)
+                # dump to database
+                if name != "UNKNOWN":
+                # if name: # this one is only for tests!
+                    timestamp = datetime.now().strftime("%Y-%M-%d %H:%M:%S")
+                    if debug:
+                        print(f"VALUES('{timestamp}', '{name}', '{source}')")
+                    
+                    # verify last seen timestamp
+                    if last_recognitions.get(f"{source} {name}") != timestamp:
+                        db.insert_data(timestamp, name, source)
+                        last_recognitions[f"{source} {name}"] = timestamp
+    
 
         # show the output frames as montage
-        montage_frames = list(frames.values())
-        montage = imutils.build_montages(
-            image_list=montage_frames, 
-            image_shape=(montage_frames[0].shape[1], montage_frames[0].shape[0]), 
-            montage_shape=(len(montage_frames), 1)
-        )[0]
-        cv2.imshow("Captured_frames", montage)
-        
-        key = cv2.waitKey(1) & 0xFF
-        
-        # press q to quit
-        if key == ord("q"):
-            break
-        
-        # press s to save montage
-        if key == ord("s"):
-            cv2.imwrite('montage.jpg', montage)
+        if debug:
+            montage_frames = list(frames.values())
+            montage = imutils.build_montages(
+                image_list=montage_frames, 
+                image_shape=(montage_frames[0].shape[1], montage_frames[0].shape[0]), 
+                montage_shape=(len(montage_frames), 1)
+            )[0]
+            cv2.imshow("Captured_frames", montage)
+            
+            key = cv2.waitKey(1) & 0xFF
+            
+            # press q to quit
+            if key == ord("q"):
+                break
+            
+            # press s to save montage
+            if key == ord("s"):
+                cv2.imwrite('montage.jpg', montage)
 
 # cleanup
 cv2.destroyAllWindows()
