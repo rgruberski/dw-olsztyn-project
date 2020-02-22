@@ -40,6 +40,7 @@ db.setup_table()
 last_recognitions = {}
 
 frames_counter = 0
+recognized_faces_counter = 0
 
 # main loop
 while True:
@@ -66,19 +67,24 @@ while True:
 
                 for location, name in zip(face_locations, names):
                     # annotate face boxes with names
-                    if debug:
-                        (top, right, bottom, left) = location
-                        y = top - 15 if top - 15 > 15 else top + 15
-                        cv2.putText(
+                    # if debug:
+
+                    (top, right, bottom, left) = location
+                    y = top - 15 if top - 15 > 15 else top + 15
+
+                    cv2.putText(
                             frame, 
                             name, 
                             (left, y), 
                             cv2.FONT_HERSHEY_SIMPLEX, 
                             0.75, 
                             (0, 255, 0), 2
-                        )
+                    )
+
+                    cv2.imwrite(f"frames/face_{recognized_faces_counter}.jpg", frame)
 
                     frames_counter += 1
+                    recognized_faces_counter += 1
                     
                 # dump to database
                 if name != "UNKNOWN":
