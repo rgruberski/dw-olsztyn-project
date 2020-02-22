@@ -81,10 +81,7 @@ while True:
                             (0, 255, 0), 2
                     )
 
-                    cv2.imwrite(f"frames/face_{recognized_faces_counter}.jpg", frame)
-
                     frames_counter += 1
-                    recognized_faces_counter += 1
                     
                 # dump to database
                 if name != "UNKNOWN":
@@ -97,6 +94,9 @@ while True:
                     if last_recognitions.get(f"{source} {name}") != timestamp:
                         db.insert_data(timestamp, name, source)
                         last_recognitions[f"{source} {name}"] = timestamp
+
+                        cv2.imwrite(f"frames/face_{recognized_faces_counter}.jpg", frame)
+                        recognized_faces_counter += 1
     
         if frames_counter >= 100:
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
