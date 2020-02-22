@@ -4,7 +4,7 @@ import threading
 class VideoGrabber():
 
     sources_urls = {
-        "tvp:": "http://user:user@192.168.2.112:9981/stream/channel/28c32609c3e9143dff5dc1b0d16838cd?profile=mpeg",
+        "tvp": "http://user:user@192.168.2.112:9981/stream/channel/28c32609c3e9143dff5dc1b0d16838cd?profile=mpeg",
         "polsat": "http://user:user@192.168.2.112:9981/stream/channel/a5f47e2442e9d19f43dafb7b51c686a2?profile=mpeg",
         "tvn": "http://user:user@192.168.2.112:9981/stream/channel/3679782872d6b7160b013fb8c0a9b393?profile=mpeg"
     }
