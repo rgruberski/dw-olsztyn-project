@@ -11,7 +11,7 @@ from video_functions import frame_detect_dnn, frame_compare_faces
 
 
 # turn on display functions and other details
-debug = True
+debug = False
 
 # load known faces data
 known_names = pd.read_pickle("dataset/president_faces_df.pickle")["name"].to_list()
@@ -24,9 +24,9 @@ net = cv2.dnn.readNetFromCaffe(
 )
 
 # video sources urls
-sources_urls = [
-    "https://sdt-epix9-56.tvp.pl/token/video/live/46334064/20200213/1369639068/36a75d7f-78b2-43e1-9b95-ae6454b4c704/tvpinfo.isml/tvpinfo-audio%3D96000-video%3D1600000.m3u8"
-]
+# sources_urls = [
+#    "https://sdt-epix9-56.tvp.pl/token/video/live/46334064/20200213/1369639068/36a75d7f-78b2-43e1-9b95-ae6454b4c704/tvpinfo.isml/tvpinfo-audio%3D96000-video%3D1600000.m3u8"
+# ]
 
 # video streams setup 
 vg = VideoGrabber(1)
@@ -38,6 +38,8 @@ db.setup_table()
 
 # recognition grabber
 last_recognitions = {}
+
+frames_counter = 0
 
 # main loop
 while True:
@@ -51,7 +53,6 @@ while True:
 
             # detect faces on frame
             frame, face_locations = frame_detect_dnn(frame, net, min_confidence=0.7)
-            
             
             if len(face_locations) > 0:
                 # build face encodings
@@ -76,18 +77,29 @@ while True:
                             0.75, 
                             (0, 255, 0), 2
                         )
+
+                    frames_counter += 1
                     
                 # dump to database
                 if name != "UNKNOWN":
+
                     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    if debug:
-                        print(f"{timestamp}, {name}, {source}")
+                    
+                    print(f"{timestamp}, {name}, {source}")
                     
                     # verify last seen timestamp
                     if last_recognitions.get(f"{source} {name}") != timestamp:
                         db.insert_data(timestamp, name, source)
                         last_recognitions[f"{source} {name}"] = timestamp
     
+        if frames_counter >= 100:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            frames_counter = 0
+
+            for source, frame in frames.items():
+                cv2.imwrite(f"{source}.jpg", frame)
+
+            print(f"{timestamp}: 100 faces detected, example frames saved")
 
         # show the output frames as montage
         if debug:
