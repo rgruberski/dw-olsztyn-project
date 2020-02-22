@@ -1,11 +1,17 @@
 import imutils
 import cv2
 import face_recognition
-import time
+import copy
+# import time
 from datetime import datetime
 import pandas as pd
+from video_grabber import VideoGrabber
+from db_manager import DBManager
 from video_functions import frame_detect_dnn, frame_compare_faces
 
+
+# turn on display functions and other details
+debug = True
 
 # load known faces data
 known_names = pd.read_pickle("dataset/president_faces_df.pickle")["name"].to_list()
@@ -23,23 +29,25 @@ sources_urls = [
 ]
 
 # video streams setup 
-video_streams = [cv2.VideoCapture(url) for url in sources_urls]
-for i, vs in enumerate(video_streams):
-    # check if source opened successfully
-    if (vs.isOpened()== False): 
-        print(f"[WARNING] Error opening video stream {i}")
+vg = VideoGrabber(1)
+vg.run()
+
+# database manager setup
+db = DBManager()
+db.setup_table()
+
+# recognition grabber
+last_recognitions = {}
 
 # main loop
 while True:
-    try:
-        #release frames
-        captured_frames = []
+    if(vg.is_ready()):
 
-        # loop over the frames from the video stream
-        for vs in video_streams: 
-            ret, frame = vs.read()
-            if ret != True:
-                continue
+        # grab frames
+        frames = copy.deepcopy(vg.frames)
+
+        # loop over the frames
+        for source, frame in frames.items(): 
 
             # detect faces on frame
             frame, face_locations = frame_detect_dnn(frame, net, min_confidence=0.7)
@@ -48,51 +56,58 @@ while True:
             if len(face_locations) > 0:
                 # build face encodings
                 face_encodings = face_recognition.face_encodings(frame, face_locations)
-
+                
                 # compare encodings with known faces
                 names = [
                     frame_compare_faces(encoding, known_encodings, known_names) 
                     for encoding in face_encodings
                 ]
 
-                # annotate face boxes with names
-                for ((top, right, bottom, left), name) in zip(face_locations, names):
-                    y = top - 15 if top - 15 > 15 else top + 15
-                    cv2.putText(
-                        frame, 
-                        name, 
-                        (left, y), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 
-                        0.75, 
-                        (0, 255, 0), 2
-                    )
+                for location, name in zip(face_locations, names):
+                    # annotate face boxes with names
+                    if debug:
+                        (top, right, bottom, left) = location
+                        y = top - 15 if top - 15 > 15 else top + 15
+                        cv2.putText(
+                            frame, 
+                            name, 
+                            (left, y), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 
+                            0.75, 
+                            (0, 255, 0), 2
+                        )
                     
-                    #TODO do other stuff with frame
-                    if name != "UNKNOWN":
-                        pass
-                        # do_other_stuff(frame)
-                        # cv2.imwrite(f"screenshots/{datetime.now()} {name}.png", frame)
-            
-            # keep processed frame for displaying
-            captured_frames.append(frame)
+                # dump to database
+                if name != "UNKNOWN":
+                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    if debug:
+                        print(f"{timestamp}, {name}, {source}")
+                    
+                    # verify last seen timestamp
+                    if last_recognitions.get(f"{source} {name}") != timestamp:
+                        db.insert_data(timestamp, name, source)
+                        last_recognitions[f"{source} {name}"] = timestamp
+    
 
         # show the output frames as montage
-        montage_size = len(video_streams)
-        montage = imutils.build_montages(
-            image_list=captured_frames, 
-            image_shape=(frame.shape[1], frame.shape[0]), 
-            montage_shape=(montage_size, 1)
-        )[0]
-        cv2.imshow("Captured_frames", montage)
-        key = cv2.waitKey(1) & 0xFF
-
-        # if the `q` key was pressed, break from the loop
-        if key == ord("q"):
-            break
-        
-    except Exception as e:
-        print(e)
-        break
+        if debug:
+            montage_frames = list(frames.values())
+            montage = imutils.build_montages(
+                image_list=montage_frames, 
+                image_shape=(montage_frames[0].shape[1], montage_frames[0].shape[0]), 
+                montage_shape=(len(montage_frames), 1)
+            )[0]
+            cv2.imshow("Captured_frames", montage)
+            
+            key = cv2.waitKey(1) & 0xFF
+            
+            # press q to quit
+            if key == ord("q"):
+                break
+            
+            # press s to save montage
+            if key == ord("s"):
+                cv2.imwrite('montage.jpg', montage)
 
 # cleanup
 for vs in video_streams:

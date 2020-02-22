@@ -10,7 +10,7 @@ while True:
 
     if(vg.is_ready()):
 
-        frames = vg.frames
+        frames = vg.frames.copy()
 
         montage_frames = list(frames.values())
 
