@@ -11,7 +11,7 @@ from video_functions import frame_detect_dnn, frame_compare_faces
 
 
 # turn on display functions and other details
-debug = True
+debug = False
 
 # load known faces data
 known_names = pd.read_pickle("dataset/president_faces_df.pickle")["name"].to_list()
