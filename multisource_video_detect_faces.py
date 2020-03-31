@@ -11,7 +11,7 @@ from video_functions import frame_detect_dnn, frame_compare_faces
 
 
 # turn on display functions and other details
-debug = False
+debug = True
 
 # load known faces data
 known_names = pd.read_pickle("dataset/president_faces_df.pickle")["name"].to_list()
@@ -23,13 +23,8 @@ net = cv2.dnn.readNetFromCaffe(
     "face_detector_model/res10_300x300_ssd_iter_140000.caffemodel"
 )
 
-# video sources urls
-# sources_urls = [
-#    "https://sdt-epix9-56.tvp.pl/token/video/live/46334064/20200213/1369639068/36a75d7f-78b2-43e1-9b95-ae6454b4c704/tvpinfo.isml/tvpinfo-audio%3D96000-video%3D1600000.m3u8"
-# ]
-
 # video streams setup 
-vg = VideoGrabber(1)
+vg = VideoGrabber() # scaling_width=800
 vg.run()
 
 # database manager setup
@@ -53,7 +48,8 @@ while True:
         for source, frame in frames.items(): 
 
             # detect faces on frame
-            frame, face_locations = frame_detect_dnn(frame, net, min_confidence=0.7)
+            # frame, face_locations = frame_detect_dnn(frame, net, min_confidence=0.7)
+            face_locations = face_recognition.face_locations(frame, model="hog")
             
             if len(face_locations) > 0:
                 # build face encodings
